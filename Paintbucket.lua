@@ -25,6 +25,7 @@ function Paintbucket:new(o)
 
     -- initialize variables here
 	self.colorshift = 0
+	self.landlord = false
 
     return o
 end
@@ -73,6 +74,8 @@ function Paintbucket:OnDocLoaded()
 		
 		local wndColorShiftFrame = self.wndMain:FindChild("ColorShiftFrame")
 		
+		self.wndColorLabel = self.wndMain:FindChild("ColorName")
+		
 		self.colorButtons = {}
 		
 		local colorOptions = HousingLib.GetDecorColorOptions()
@@ -110,7 +113,11 @@ function Paintbucket:OnPaintbucketOn()
 end
 
 function Paintbucket:OnFreePlaceDecorSelected(decorSelection)
-	-- Landlord mode
+	if self.landlord then
+		self:Paint()
+	else
+		decorSelection:SetColor(self.colorshift)
+	end
 end
 
 
@@ -129,23 +136,25 @@ end
 
 
 function Paintbucket:OnColourPick( wndHandler, wndControl, eMouseButton )
-	local res = HousingLib.GetResidence()
-	if res == nil then return end
-	local dec = res:GetSelectedDecor()
+	local dec = self:GetSelectedDecor()
 	if dec == nil then return end
 	
-	self.colorshift = dec:GetDecorColor()
+	self:SetColor(dec:GetDecorColor())
 	self:SetColorButton(self.colorshift)
 end
 
 function Paintbucket:OnPaint( wndHandler, wndControl, eMouseButton )
-	local res = HousingLib.GetResidence()
-	if res == nil then return end
-	local dec = res:GetSelectedDecor()
+	self:Paint()
+end
+
+function Paintbucket:Paint()
+	local dec = self:GetSelectedDecor()
 	if dec == nil then return end
 	
-	local sendCommand = string.format("/c house decor paint %s %s", dec:GetId(), self.colorshift)
-	ChatSystemLib.Command(sendCommand)
+	if dec:GetDecorColor() ~= self.colorshift then
+		local sendCommand = string.format("/c house decor paint %s %s", dec:GetId(), self.colorshift)
+		ChatSystemLib.Command(sendCommand)
+	end
 end
 
 function Paintbucket:SetColorButton(id)
@@ -154,17 +163,50 @@ function Paintbucket:SetColorButton(id)
 	end
 end
 
+function Paintbucket:OnLandlordOn( wndHandler, wndControl, eMouseButton )
+	self.landlord = true
+end
+
+function Paintbucket:OnLandlordOff( wndHandler, wndControl, eMouseButton )
+	self.landlord = false
+end
+
 ---------------------------------------------------------------------------------------------------
 -- ColorShiftEntry Functions
 ---------------------------------------------------------------------------------------------------
 
 function Paintbucket:OnColorSelected( wndHandler, wndControl, eMouseButton )
-	self.colorshift = wndControl:GetData().id
+	self:SetColor(wndControl:GetData().id)
 	self:SetColorButton(self.colorshift)
 end
 
 function Paintbucket:OnColorUncheck( wndHandler, wndControl, eMouseButton )
-	self:SetColorButton(self.colorshift)
+	if wndControl:GetData().id == self.colorshift then
+		self:SetColor(0)
+		self:SetColorButton(0)
+	end
+end
+
+function Paintbucket:GetSelectedDecor()
+	local res = HousingLib.GetResidence()
+	if res == nil then return nil end
+	return res:GetSelectedDecor()
+end
+
+function Paintbucket:SetColor(color)
+	self.colorshift = color
+	
+	local dec = self:GetSelectedDecor()
+	if dec ~= nil then
+		dec:SetColor(self.colorshift)
+	end
+	
+	local cs = HousingLib.GetDecorColorInfo(color)
+	if cs ~= nil then
+		self.wndColorLabel:SetText(cs.strName)
+	else
+		self.wndColorLabel:SetText("Uncoloured")
+	end
 end
 
 -----------------------------------------------------------------------------------------------
