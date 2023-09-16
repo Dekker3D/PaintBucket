@@ -143,7 +143,7 @@ function Paintbucket:Paint()
 	local dec = self:GetSelectedDecor()
 	if dec == nil then return end
 	
-	if dec:GetDecorColor() ~= self.colorshift then
+	if dec:GetSavedDecorColor() ~= self.colorshift then
 		local sendCommand = string.format("/c house decor paint %s %s", dec:GetId(), self.colorshift)
 		ChatSystemLib.Command(sendCommand)
 	end
