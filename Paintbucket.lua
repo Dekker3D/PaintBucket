@@ -26,6 +26,8 @@ function Paintbucket:new(o)
     -- initialize variables here
 	self.colorshift = 0
 	self.landlord = false
+	self.previewMode = false
+	self.active = false
 
     return o
 end
@@ -116,7 +118,7 @@ function Paintbucket:OnFreePlaceDecorSelected(decorSelection)
 	if self.landlord then
 		self:Paint()
 	else
-		decorSelection:SetColor(self.colorshift)
+		self:SetDecorPreview()
 	end
 end
 
@@ -124,16 +126,6 @@ end
 -----------------------------------------------------------------------------------------------
 -- PaintbucketForm Functions
 -----------------------------------------------------------------------------------------------
--- when the OK button is clicked
-function Paintbucket:OnOK()
-	self.wndMain:Close() -- hide the window
-end
-
--- when the Cancel button is clicked
-function Paintbucket:OnCancel()
-	self.wndMain:Close() -- hide the window
-end
-
 
 function Paintbucket:OnColourPick( wndHandler, wndControl, eMouseButton )
 	local dec = self:GetSelectedDecor()
@@ -171,6 +163,30 @@ function Paintbucket:OnLandlordOff( wndHandler, wndControl, eMouseButton )
 	self.landlord = false
 end
 
+function Paintbucket:OnPreviewModeOn( wndHandler, wndControl, eMouseButton )
+	self.previewMode = true
+	self:SetDecorPreview()
+end
+
+function Paintbucket:OnPreviewModeOff( wndHandler, wndControl, eMouseButton )
+	self.previewMode = false
+	self:ClearDecorPreview()
+end
+
+function Paintbucket:OnClose( wndHandler, wndControl )
+	self.active = false
+	self:ClearDecorPreview()
+end
+
+function Paintbucket:OnOpen( wndHandler, wndControl )
+	self.active = true
+	self:SetDecorPreview()
+end
+
+function Paintbucket:OnCloseButton( wndHandler, wndControl, eMouseButton )
+	self.wndMain:Close()
+end
+
 ---------------------------------------------------------------------------------------------------
 -- ColorShiftEntry Functions
 ---------------------------------------------------------------------------------------------------
@@ -190,22 +206,48 @@ end
 function Paintbucket:GetSelectedDecor()
 	local res = HousingLib.GetResidence()
 	if res == nil then return nil end
-	return res:GetSelectedDecor()
+	local dec = res:GetSelectedDecor()
+	if dec == nil or dec:IsPreview() then return nil end
+	return dec
 end
 
 function Paintbucket:SetColor(color)
 	self.colorshift = color
-	
-	local dec = self:GetSelectedDecor()
-	if dec ~= nil then
-		dec:SetColor(self.colorshift)
-	end
 	
 	local cs = HousingLib.GetDecorColorInfo(color)
 	if cs ~= nil then
 		self.wndColorLabel:SetText(cs.strName)
 	else
 		self.wndColorLabel:SetText("Uncoloured")
+	end
+	
+	self:SetDecorPreview()
+end
+
+function Paintbucket:SetDecorPreview()
+	local dec = self:GetSelectedDecor()
+	if dec ~= nil and self.previewMode and self.active then
+		dec:SetColor(self.colorshift)
+	end
+end
+
+function Paintbucket:ClearDecorPreview()
+	local dec = self:GetSelectedDecor()
+	if dec ~= nil then
+		if dec:GetDecorColor() == self.colorshift then
+			dec:SetColor(dec:GetSavedDecorColor())
+		end
+	end
+end
+
+function Paintbucket:PrintTable(table)
+	if type(table) == "userdata" then table = getmetatable(table) end
+	for k, v in pairs(table) do
+		if type(v) == "table" then Print(k .. ": table")
+		elseif type(v) == "userdata" then Print(k .. ": userdata")
+		elseif type(v) == "boolean" then Print(k .. ": boolean")
+		elseif type(v) == "function" then Print(k .. ": function")
+		else Print(k .. ": " .. v) end
 	end
 end
 
