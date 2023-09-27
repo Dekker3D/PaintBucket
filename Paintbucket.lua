@@ -92,6 +92,8 @@ function Paintbucket:OnDocLoaded()
 			self.colorButtons[tColorShift.id] = wndButton
 		end
 		local nHeight = wndColorShiftFrame:ArrangeChildrenTiles()
+		
+		self.wndLandlordButton = self.wndMain:FindChild("LandlordMode")
 		--local nLeft, nTop, nRight, nBottom = wndColorShiftFrame:GetAnchorOffsets()
 		--wndColorShiftFrame:SetAnchorOffsets(nLeft, nTop, nRight, nTop + nHeight)
 		
@@ -140,6 +142,7 @@ function Paintbucket:OnPaint( wndHandler, wndControl, eMouseButton )
 end
 
 function Paintbucket:Paint()
+	if not self.active then return end
 	local dec = self:GetSelectedDecor()
 	if dec == nil then return end
 	
@@ -176,6 +179,9 @@ end
 function Paintbucket:OnClose( wndHandler, wndControl )
 	self.active = false
 	self:ClearDecorPreview()
+	
+	self.wndLandlordButton:SetCheck(false)
+	self.landlord = false
 end
 
 function Paintbucket:OnOpen( wndHandler, wndControl )
